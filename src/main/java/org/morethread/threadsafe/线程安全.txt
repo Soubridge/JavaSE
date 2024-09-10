@@ -1,0 +1,56 @@
+线程不安全的原因：多线程使用公共资源时，有些不可分割的操作被多个线程同步执行了(如，计数&扩容)，导致出错
+注意：进入被锁的线程执行时，cpu的执行权还是会轮换的，只不过对于那些Blocked状态 & 竞争同一把锁的即使拿到cpu执行权，也会因为没有对象锁权继续Blocked，对于无锁的线程则不会影响
+锁本来就是保证安全和调度线程的执行的，对于那些不产生冲突的线程当然不需要调度，正常并行就可以
+一、同步代码块
+在run方法中将可能会出现线程不安全的操作“锁”起来(在某个线程交锁前，只允许这个线程进入)，保证某些资源(代码),只允许有一个进程在执行，即使其他线程拿到时间片也会被对象锁锁住
+synchronized(对象锁){
+    【需进行同步的代码】
+}
+对象锁：每个对象都有内置的锁(监视器)，保证只有一个线程能够持有对象的锁，即保证只有一个线程能够进入被锁的资源执行
+锁对象可以是任何类型，但必须保证多个线程在想使用代码块的时候，必须要申请的是同一个锁对象[这样才能保证互斥]
+建议：同步代码块的对象锁使用字节码(万能锁->字节码对象只会存在一次，JVM加载时创建)
+字节码获取{
+    ①String.class;  //直接用类名.class
+    ②String str = new String; str.getClass();  //获取对象实例，用.getClass()方法获取字节码
+}
+
+二、同步方法
+run方法中可能会调用类的方法，有些线程不安全的方法，也是只允许一个线程执行，如果只是在单线程环境下跑方法，其实就是没必要
+1、实例方法 [锁对象是当前对象的引用this]
+public synchronized void show(){}
+2、静态方法 [锁对象是当前类的字节码对象.class]
+public static synchronized void show(){}
+
+三、Lock锁  java.util.concurrent.locks.ReentrantLock;
+相较于synchronized 加锁和释放锁更加方法化了........
+
+ReentrantLock lock = new ReentrantLock();
+lock.lock();//加锁
+.........   //线程不安全代码
+lock.unlock(); //释放锁
+
+四、集合的线程安全性
+线程安全的集合会在大部分方法上加入synchronized修饰，使其成为同步方法，但是这会牺牲执行时间，如果不在多线程环境下运行，建议选择高速的ArrayList
+安全集合：Vector、Stack、Hashtable
+不安全的集合：Arraylist、HashMap
+如，ArrayList如果在多线程环境中，刚刚加入元素后满了，但是count还没来的及++，就被抢走执行权，导致这次加入数据没有触发扩容机制
+下次加入的时候数组越界，这就是多线程不安全
+
+五、线程的等待与唤醒（wait、notify）
+wait()：锁对象调用，释放当前线程的锁对象，使当前的锁对象对应的线程由running转为waiting状态，若预先设置了时间则过完规定的时间后线程自动醒来(Timed_waiting)
+notify()：锁对象调用，随机唤醒锁对象对应线程中的一条waiting状态
+notifyAll()：唤醒锁对象对应的所有线程【效率低，不常用】
+注意：wait()和notify()必须在同步代码块或同步方法中使用，因为这俩都是锁对象调用的，在执行wait、notify前你至少得有有把锁吧
+    同步方法的锁，静态：this.getClass().wait(); 实例方法 this.notify();
+synchronized(String.class){
+    String.class.wait();    // 必须要在同步代码块中wait
+    String.class.notify();  // wait的执行锁对象必须是这段同步代码块的锁对象
+}
+若几个用同一对象锁的都没有主动用wait，则说没有主动安排线程的运行顺序，只有同步代码块起作用了，若wait一定记得在相同锁对象控制的内容里用notify！！！
+线程获得锁的方式，有锁对象权的wait给blocked状态的线程、有锁对象权的运行完成或异常，blocked状态线程竞争对象锁权
+
+六、中断与wait
+1、如果尝试用thread.interrupt()中断处于wait状态的线程会触发InterruptedException异常
+2、中断状态时，线程isInterrupted()返回true，但如果没有线程体run()没有实时监测停止，还是会正常执行内容
+   这就导致中断后的线程仍然可以执行wait、sleep、join等方法，这会抛出InterruptedException异常，同时线程也会发现：哦，原来自己并没有被中断
+   也会自动将isInterrupted()的返回值调整成false

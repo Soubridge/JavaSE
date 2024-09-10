@@ -1,0 +1,31 @@
+/********************多线程总结*****************************/
+1、创建一个线程
+    线程类(Thread)常用带参(Runnable)构造初始化,Runnable是个函数接口,只有run一种抽象方法,只有用thread就可以让其动起来
+    Thread thread = new Thread(new Runnable(){
+        @Override
+        public void run(){
+            sout("线程运行内容");
+    },"t1");
+2、常用方法
+    ①Thread.currentThread() 指向运行当前内容的线程,可以由此在线程运行内容时获取线程的信息,如Thread.currentThread().getId();
+    ②Thread.sleep(X) 让当前线程睡眠X毫秒,如果在睡眠时有其他线程调用其thread.interrupt()则会抛interruptedException异常
+    ③thread.join(X) 优先让thread线程运行X毫秒，如果未写X则默认thread线程运行完再运行本线程
+            当某个线程调用thread.join()，thread只相对于这个线程有优先！！！
+3、守护线程(辅助线程)
+    方法：public final void setDaemon()......设置为守护线程[t1.setDaemon(); t1.start();也需要手动启动]
+    守护线程负责提供一些辅助支持，如垃圾回收、状态监控，只有所有的非守护线程停止，守护线程才会自动停止
+4、线程中断(默认为false,非中断状态)
+    thread.interrupt(), 中断线程执行, 并把中断状态更新为true，若线程状态为sleep()、join其他线程、wait()，会触发InterruptException
+    thread.isInterrupted(), 返回查询线程实例的中断状态(true/false)
+    Thread.interrupted(), 返回本线程的中断状态，并讲中断状态恢复成正常(false)
+5、Callable()实现线程
+    Callable()接口和Runnable()接口有所不同，虽然都是函数式接口(Callable()的方法是call()方法、Runnable()为run()方法)
+    但是Callable()有返回值，而且需要用FutureTask类进行封装后才可以用
+    FutureTask<String> task1 = new FutureTask<>(new Callable(){  //规定了返回值(泛型),为String类型
+        @Override
+        public void call(){
+            sout("FutureTask类封装完成");
+        }
+    });
+    new Thread(task1).start();
+    task1.get();    //线程在运行中肯定是把结果给FutureTask的实例task1了，要不然就是在Thread的实例中输出了

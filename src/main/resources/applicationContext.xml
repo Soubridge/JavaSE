@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="org.lzssl.moel.User" id="user1">
+        <constructor-arg name="username" value="lzssl"/>
+        <constructor-arg name="address" value="www.baidu.com"/>
+        <constructor-arg name="id" value="1"/>
+    </bean>
+
+    <bean class="org.lzssl.moel.User" id="user2">
+        <property name="address" value="www.lzssl.com"/>
+        <property name="id" value="2"/>
+        <property name="username" value="luoshenglu"/>
+    </bean>
+
+</beans>
